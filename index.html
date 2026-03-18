@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>宇宙正在回复你</title>
+    <link rel="stylesheet" href="style.min.css?v=1.0.0">
+</head>
+<body>
+    <!-- 密码保护层 -->
+    <div id="password-gate" style="position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg,#0a0a1a 0%,#1a1a3a 50%,#0a0a1a 100%);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;box-sizing:border-box;">
+        <div style="text-align:center;color:white;max-width:400px;">
+            <h2 style="font-size:2rem;font-weight:300;letter-spacing:0.15em;margin-bottom:20px;text-shadow:0 0 30px rgba(157,123,255,0.5);">✦</h2>
+            <h3 style="font-size:1.3rem;font-weight:300;margin-bottom:30px;color:rgba(255,255,255,0.9);">宇宙正在回复你</h3>
+            <p style="font-size:0.85rem;color:rgba(255,255,255,0.5);margin-bottom:30px;">v1.0.0-beta 封闭测试</p>
+            <input type="password" id="access-code" placeholder="输入访问密码" style="width:100%;padding:14px 20px;font-size:1rem;background:rgba(255,255,255,0.05);border:1px solid rgba(157,123,255,0.3);border-radius:8px;color:white;text-align:center;outline:none;transition:all 0.3s;margin-bottom:20px;">
+            <button id="unlock-btn" style="width:100%;padding:14px 32px;font-size:1rem;background:linear-gradient(135deg,rgba(157,123,255,0.3) 0%,rgba(138,43,226,0.2) 100%);border:1px solid rgba(157,123,255,0.4);border-radius:8px;color:white;cursor:pointer;transition:all 0.3s;letter-spacing:0.1em;">进入体验</button>
+            <p id="error-msg" style="font-size:0.8rem;color:#ff6b6b;margin-top:15px;opacity:0;transition:opacity 0.3s;">密码错误</p>
+        </div>
+    </div>
+    
+    <!-- 星空背景 - 动态粒子效果 -->
+    <div class="stars"></div>
+    <div class="stars2"></div>
+    <div class="stars3"></div>
+    <div class="stars-moving"></div>
+    <div class="stars-shimmer"></div>
+    
+    <!-- 流星效果 -->
+    <div class="meteor meteor-1"></div>
+    <div class="meteor meteor-2"></div>
+    <div class="meteor meteor-3"></div>
+    
+    <!-- 页面容器 -->
+    <div class="container">
+        
+        <!-- 第1页：首页 -->
+        <section class="page active" id="page-home">
+            <div class="content">
+                <h1 class="title">宇宙正在回复你</h1>
+                <p class="subtitle">当你向宇宙提问，<br>宇宙总会给你一个答案。</p>
+                
+                <!-- 每日宇宙格言 -->
+                <div class="daily-wisdom">
+                    <p id="daily-wisdom-text"></p>
+                </div>
+                
+                <!-- 模式选择 -->
+                <div class="mode-selection">
+                    <div class="mode-card" onclick="selectMode('general')">
+                        <div class="mode-icon">✦</div>
+                        <div class="mode-title">问一件事</div>
+                        <div class="mode-desc">关于生活、工作、选择</div>
+                    </div>
+                    <div class="mode-card" onclick="selectMode('relationship')">
+                        <div class="mode-icon">❋</div>
+                        <div class="mode-title">问一段关系</div>
+                        <div class="mode-desc">关于某个人、某段感情</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 第2页：输入问题 -->
+        <section class="page" id="page-input">
+            <div class="content">
+                <h2 class="page-title">你想问宇宙什么？</h2>
+                <div class="input-group">
+                    <textarea 
+                        id="question-input" 
+                        placeholder="在这里输入你的问题..."
+                        rows="3"
+                    ></textarea>
+                </div>
+                <div class="examples">
+                    <p class="example-label">示例：</p>
+                    <div class="example-tags">
+                        <span class="tag" onclick="fillQuestion('今天运势如何？')">今天运势如何？</span>
+                        <span class="tag" onclick="fillQuestion('他在想我吗？')">他在想我吗？</span>
+                        <span class="tag" onclick="fillQuestion('这件事会成功吗？')">这件事会成功吗？</span>
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="submitQuestion()">
+                    交给宇宙
+                </button>
+                
+                <button class="btn-secondary" onclick="goToPage('page-home')" style="margin-top: 16px;">
+                    返回首页
+                </button>
+            </div>
+        </section>
+
+        <!-- 第2.5页：关系占卜输入 -->
+        <section class="page" id="page-relationship-input">
+            <div class="content">
+                <h2 class="page-title">这段关系，关于谁？</h2>
+                <p class="input-hint">输入一个人的名字或昵称<br>宇宙会传递关于这段关系的讯息</p>
+                <div class="input-group">
+                    <input 
+                        type="text"
+                        id="person-name-input" 
+                        placeholder="例如：小明、她、前任..."
+                        maxlength="20"
+                    />
+                </div>
+                <div class="examples">
+                    <p class="example-label">可以是：</p>
+                    <div class="example-tags">
+                        <span class="tag" onclick="fillPersonName('喜欢的人')">喜欢的人</span>
+                        <span class="tag" onclick="fillPersonName('前任')">前任</span>
+                        <span class="tag" onclick="fillPersonName('那个TA')">那个TA</span>
+                        <span class="tag" onclick="fillPersonName('暧昧对象')">暧昧对象</span>
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="submitRelationship()">
+                    探寻这段关系
+                </button>
+                
+                <button class="btn-secondary" onclick="goToPage('page-home')" style="margin-top: 16px;">
+                    返回首页
+                </button>
+            </div>
+        </section>
+        
+        <!-- 第3页：抽牌 -->
+        <section class="page" id="page-draw">
+            <div class="content">
+                <h2 class="page-title">宇宙正在洗牌...</h2>
+                <p class="hint">点击卡牌，揭晓答案</p>
+                <div class="cards-container">
+                    <div class="card" id="card-1" onclick="revealCard(1)">
+                        <div class="card-inner">
+                            <div class="card-front">
+                                <div class="card-back-pattern">✦</div>
+                            </div>
+                            <div class="card-back">
+                                <div class="card-content">
+                                    <div class="card-number">I</div>
+                                    <div class="card-name" id="card-name-1">魔术师</div>
+                                    <div class="card-meaning" id="card-meaning-1">创造与显化</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card" id="card-2" onclick="revealCard(2)">
+                        <div class="card-inner">
+                            <div class="card-front">
+                                <div class="card-back-pattern">✦</div>
+                            </div>
+                            <div class="card-back">
+                                <div class="card-content">
+                                    <div class="card-number">II</div>
+                                    <div class="card-name" id="card-name-2">女祭司</div>
+                                    <div class="card-meaning" id="card-meaning-2">直觉与内在</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card" id="card-3" onclick="revealCard(3)">
+                        <div class="card-inner">
+                            <div class="card-front">
+                                <div class="card-back-pattern">✦</div>
+                            </div>
+                            <div class="card-back">
+                                <div class="card-content">
+                                    <div class="card-number">III</div>
+                                    <div class="card-name" id="card-name-3">皇后</div>
+                                    <div class="card-meaning" id="card-meaning-3">丰饶与滋养</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-primary" id="btn-interpret" style="display:none;" onclick="goToPage('page-interpret')">
+                    查看宇宙解读
+                </button>
+                
+                <button class="btn-secondary" onclick="goToPage('page-home')" style="margin-top: 20px;">
+                    返回首页
+                </button>
+            </div>
+        </section>
+        
+        <!-- 第4页：宇宙解读 -->
+        <section class="page" id="page-interpret">
+            <!-- 解读页专属背景 -->
+            <div class="page-interpret-stars"></div>
+            <div class="interpret-glow"></div>
+            
+            <div class="content">
+                <h2 class="page-title">宇宙的回复</h2>
+                
+                <!-- 宇宙答案编号 -->
+                <div class="answer-id" id="answer-id">宇宙答案 #<span></span></div>
+                
+                <div class="question-display">
+                    <span class="label">你的问题：</span>
+                    <p id="display-question"></p>
+                </div>
+                <div class="cards-result">
+                    <div class="mini-card" id="mini-card-1"></div>
+                    <div class="mini-card" id="mini-card-2"></div>
+                    <div class="mini-card" id="mini-card-3"></div>
+                </div>
+                <div class="interpretation-box">
+                    <div class="loading" id="interpret-loading">
+                        <div class="spinner"></div>
+                        <p>宇宙正在思考...</p>
+                    </div>
+                    <div class="interpret-content" id="interpret-content" style="display:none;">
+                        <p id="interpret-text"></p>
+                    </div>
+                </div>
+                
+                <!-- 宇宙特别讯息 -->
+                <div class="special-message" id="special-message" style="display:none;">
+                    <div class="special-label">✨ 宇宙特别讯息</div>
+                    <p id="special-message-text"></p>
+                </div>
+                
+                <button class="btn-primary btn-glow" id="btn-wisdom" style="display:none;" onclick="goToPage('page-wisdom')">
+                    接收宇宙格言
+                </button>
+                
+                <button class="btn-primary btn-share" id="btn-generate-card" style="display:none; margin-top: 12px;" onclick="generateCosmicCard()">
+                    生成宇宙卡片
+                </button>
+                
+                <button class="btn-secondary" onclick="goToPage('page-home')" style="margin-top: 16px;">
+                    返回首页
+                </button>
+            </div>
+        </section>
+
+        <!-- 第4.5页：关系解读 -->
+        <section class="page" id="page-relationship-interpret">
+            <!-- 解读页专属背景 -->
+            <div class="page-interpret-stars"></div>
+            <div class="interpret-glow"></div>
+            
+            <div class="content">
+                <h2 class="page-title">宇宙的低语</h2>
+                
+                <!-- 宇宙答案编号 -->
+                <div class="answer-id" id="relation-answer-id">宇宙答案 #<span></span></div>
+                
+                <div class="question-display relationship-display">
+                    <span class="label">关于</span>
+                    <p id="display-person-name"></p>
+                    <span class="label">这段关系</span>
+                </div>
+                <div class="cards-result">
+                    <div class="mini-card" id="relation-mini-card-1"></div>
+                    <div class="mini-card" id="relation-mini-card-2"></div>
+                    <div class="mini-card" id="relation-mini-card-3"></div>
+                </div>
+                <div class="interpretation-box">
+                    <div class="loading" id="relation-interpret-loading">
+                        <div class="spinner"></div>
+                        <p>宇宙正在感知这段连结...</p>
+                    </div>
+                    <div class="interpret-content" id="relation-interpret-content" style="display:none;">
+                        <p id="relation-interpret-text"></p>
+                    </div>
+                </div>
+                <button class="btn-primary" id="btn-relation-wisdom" style="display:none;" onclick="goToPage('page-wisdom')">
+                    接收宇宙寄语
+                </button>
+                
+                <button class="btn-secondary" onclick="goToPage('page-home')" style="margin-top: 16px;">
+                    返回首页
+                </button>
+            </div>
+        </section>
+        
+        <!-- 第5页：宇宙格言 -->
+        <section class="page" id="page-wisdom">
+            <div class="content">
+                <h2 class="page-title">宇宙想对你说</h2>
+                <div class="wisdom-box">
+                    <div class="loading" id="wisdom-loading">
+                        <div class="spinner"></div>
+                        <p>宇宙正在低语...</p>
+                    </div>
+                    <div class="wisdom-content" id="wisdom-content" style="display:none;">
+                        <p class="wisdom-text" id="wisdom-text"></p>
+                    </div>
+                </div>
+                <button class="btn-primary" id="btn-share" style="display:none;" onclick="goToPage('page-share')">
+                    生成分享卡片
+                </button>
+                
+                <button class="btn-secondary" onclick="goToPage('page-home')" style="margin-top: 16px;">
+                    返回首页
+                </button>
+            </div>
+        </section>
+        
+        <!-- 第6页：分享卡片 -->
+        <section class="page" id="page-share">
+            <div class="content">
+                <h2 class="page-title">你的宇宙时刻</h2>
+                <div class="share-card" id="share-card">
+                    <div class="card-header">
+                        <h3>宇宙正在回复你</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-question">
+                            <span class="label">问：</span>
+                            <p id="share-question"></p>
+                        </div>
+                        <div class="card-interpret">
+                            <span class="label">宇宙说：</span>
+                            <p id="share-interpret"></p>
+                        </div>
+                        <div class="card-wisdom">
+                            <span class="label">✦</span>
+                            <p id="share-wisdom"></p>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <p>长按保存图片，分享给你的朋友</p>
+                    </div>
+                </div>
+                <div class="share-actions">
+                    <button class="btn-secondary" onclick="downloadCard()">
+                        保存图片
+                    </button>
+                    <button class="btn-primary" onclick="goToPage('page-home')">
+                        再问一个
+                    </button>
+                </div>
+            </div>
+        </section>
+        
+    </div>
+    
+    <!-- 版本号与反馈 -->
+    <div class="version-badge">v1.0.0-beta</div>
+    <a href="mailto:644270592@qq.com?subject=宇宙回复你-反馈" class="feedback-link" title="反馈问题">✉️ 反馈</a>
+    
+    <!-- 引入脚本 -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js?v=1.0.0"></script>
+    <script src="script.min.js?v=1.0.0"></script>
+    <script>
+    // 密码保护
+    (function(){
+        const CORRECT_PASSWORD = 'yuzhou2024';
+        const gate = document.getElementById('password-gate');
+        const input = document.getElementById('access-code');
+        const btn = document.getElementById('unlock-btn');
+        const error = document.getElementById('error-msg');
+        
+        function checkPassword(){
+            if(input.value === CORRECT_PASSWORD){
+                gate.style.opacity = '0';
+                gate.style.transition = 'opacity 0.5s ease';
+                setTimeout(()=>gate.style.display='none',500);
+                sessionStorage.setItem('universe_access','granted');
+            }else{
+                error.style.opacity = '1';
+                input.style.borderColor = '#ff6b6b';
+                setTimeout(()=>{
+                    error.style.opacity = '0';
+                    input.style.borderColor = 'rgba(157,123,255,0.3)';
+                },2000);
+            }
+        }
+        
+        // 检查是否已登录
+        if(sessionStorage.getItem('universe_access') === 'granted'){
+            gate.style.display = 'none';
+        }
+        
+        btn.addEventListener('click',checkPassword);
+        input.addEventListener('keypress',(e)=>{e.key==='Enter'&&checkPassword()});
+    })();
+    </script>
+</body>
+</html>

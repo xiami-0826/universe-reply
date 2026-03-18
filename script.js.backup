@@ -1,0 +1,1164 @@
+/**
+ * 宇宙正在回复你 - 主应用逻辑
+ * 智能占卜系统 - 每次解读都不同
+ */
+
+// 全局状态
+const state = {
+    mode: 'general', // 'general' 或 'relationship'
+    question: '',
+    personName: '',
+    cards: [],
+    revealedCards: 0,
+    interpretation: '',
+    wisdom: ''
+};
+
+// 塔罗牌数据 - 英文名称 + 关键词 + 解读维度
+const tarotCards = [
+    { 
+        id: 0, 
+        name: 'The Fool', 
+        nameCN: '愚者',
+        keywords: ['新的开始', '冒险', '纯真', '信任'],
+        themes: {
+            beginning: '一段全新的旅程即将开始',
+            mindset: '保持初心和勇气',
+            advice: '相信直觉，勇敢迈出第一步'
+        }
+    },
+    { 
+        id: 1, 
+        name: 'The Magician', 
+        nameCN: '魔术师',
+        keywords: ['创造', '显化', '能力', '行动'],
+        themes: {
+            beginning: '你拥有实现愿望的所有资源',
+            mindset: '相信自己的能力',
+            advice: '将想法转化为行动'
+        }
+    },
+    { 
+        id: 2, 
+        name: 'The High Priestess', 
+        nameCN: '女祭司',
+        keywords: ['直觉', '内在', '神秘', '等待'],
+        themes: {
+            beginning: '答案隐藏在你的内心深处',
+            mindset: '倾听内在的声音',
+            advice: '有些事情需要等待时机成熟'
+        }
+    },
+    { 
+        id: 3, 
+        name: 'The Empress', 
+        nameCN: '皇后',
+        keywords: ['丰饶', '滋养', '创造力', '母性'],
+        themes: {
+            beginning: '丰盛的能量正在流向你',
+            mindset: '接纳生命的美好',
+            advice: '照顾好自己的身心'
+        }
+    },
+    { 
+        id: 4, 
+        name: 'The Emperor', 
+        nameCN: '皇帝',
+        keywords: ['权威', '结构', '稳定', '掌控'],
+        themes: {
+            beginning: '建立稳固的基础很重要',
+            mindset: '保持理性和秩序',
+            advice: '制定清晰的计划并执行'
+        }
+    },
+    { 
+        id: 5, 
+        name: 'The Lovers', 
+        nameCN: '恋人',
+        keywords: ['选择', '关系', '和谐', '价值观'],
+        themes: {
+            beginning: '一个重要的人际关系或选择浮现',
+            mindset: '忠于自己的内心',
+            advice: '在关系中寻求平衡与和谐'
+        }
+    },
+    { 
+        id: 6, 
+        name: 'The Chariot', 
+        nameCN: '战车',
+        keywords: ['意志', '胜利', '前进', '控制'],
+        themes: {
+            beginning: '通过意志力克服困难',
+            mindset: '保持专注和决心',
+            advice: '驾驭对立的力量，勇往直前'
+        }
+    },
+    { 
+        id: 7, 
+        name: 'Strength', 
+        nameCN: '力量',
+        keywords: ['勇气', '耐心', '内在力量', '温柔'],
+        themes: {
+            beginning: '真正的力量来自内在的平静',
+            mindset: '以柔克刚',
+            advice: '用耐心和爱面对挑战'
+        }
+    },
+    { 
+        id: 8, 
+        name: 'The Hermit', 
+        nameCN: '隐者',
+        keywords: ['反思', '独处', '寻求', '指引'],
+        themes: {
+            beginning: '一段内省和寻找答案的时期',
+            mindset: '退后一步，观察全局',
+            advice: '在独处中找到内心的光'
+        }
+    },
+    { 
+        id: 9, 
+        name: 'Wheel of Fortune', 
+        nameCN: '命运之轮',
+        keywords: ['变化', '命运', '周期', '转折'],
+        themes: {
+            beginning: '生命的车轮正在转动',
+            mindset: '接受变化是永恒的',
+            advice: '顺势而为，把握时机'
+        }
+    },
+    { 
+        id: 10, 
+        name: 'Justice', 
+        nameCN: '正义',
+        keywords: ['平衡', '真理', '因果', '公正'],
+        themes: {
+            beginning: '因果法则正在运作',
+            mindset: '保持诚实和公正',
+            advice: '每个选择都有其后果'
+        }
+    },
+    { 
+        id: 11, 
+        name: 'The Hanged Man', 
+        nameCN: '倒吊人',
+        keywords: ['牺牲', '顿悟', '暂停', '新视角'],
+        themes: {
+            beginning: '需要暂停和换个角度看问题',
+            mindset: '放下控制，接纳现状',
+            advice: '有时候不行动是最好的行动'
+        }
+    },
+    { 
+        id: 12, 
+        name: 'Death', 
+        nameCN: '死神',
+        keywords: ['结束', '重生', '转变', '放手'],
+        themes: {
+            beginning: '旧的循环正在结束',
+            mindset: '放下才能迎来新生',
+            advice: '允许某些事物自然消逝'
+        }
+    },
+    { 
+        id: 13, 
+        name: 'Temperance', 
+        nameCN: '节制',
+        keywords: ['和谐', '中庸', '平衡', '耐心'],
+        themes: {
+            beginning: '寻找平衡与和谐之道',
+            mindset: '不急不躁，循序渐进',
+            advice: '在对立中找到融合点'
+        }
+    },
+    { 
+        id: 14, 
+        name: 'The Devil', 
+        nameCN: '恶魔',
+        keywords: ['束缚', '欲望', '依赖', '阴影'],
+        themes: {
+            beginning: '某些束缚需要被看见',
+            mindset: '觉察自己的限制性信念',
+            advice: '你有力量解开自己的锁链'
+        }
+    },
+    { 
+        id: 15, 
+        name: 'The Tower', 
+        nameCN: '塔',
+        keywords: ['突变', '觉醒', '颠覆', '真相'],
+        themes: {
+            beginning: '突然的变化带来觉醒',
+            mindset: '在崩塌中看到重建的可能',
+            advice: '有时候需要打破才能重建'
+        }
+    },
+    { 
+        id: 16, 
+        name: 'The Star', 
+        nameCN: '星星',
+        keywords: ['希望', '灵感', '宁静', '指引'],
+        themes: {
+            beginning: '希望之光照亮前路',
+            mindset: '保持信心和乐观',
+            advice: '相信宇宙在眷顾着你'
+        }
+    },
+    { 
+        id: 17, 
+        name: 'The Moon', 
+        nameCN: '月亮',
+        keywords: ['迷茫', '潜意识', '幻象', '情绪'],
+        themes: {
+            beginning: '某些事情还不清晰',
+            mindset: '接纳不确定性的存在',
+            advice: '跟随直觉穿越迷雾'
+        }
+    },
+    { 
+        id: 18, 
+        name: 'The Sun', 
+        nameCN: '太阳',
+        keywords: ['积极', '光明', '成功', '喜悦'],
+        themes: {
+            beginning: '光明和成功的能量充满你',
+            mindset: '保持敞开和喜悦',
+            advice: '分享你的光芒给周围的人'
+        }
+    },
+    { 
+        id: 19, 
+        name: 'Judgement', 
+        nameCN: '审判',
+        keywords: ['重生', '觉醒', '召唤', '宽恕'],
+        themes: {
+            beginning: '一个觉醒和重生的时刻',
+            mindset: '听从内心的召唤',
+            advice: '放下过去，迎接新的自己'
+        }
+    },
+    { 
+        id: 20, 
+        name: 'The World', 
+        nameCN: '世界',
+        keywords: ['完成', '圆满', '成就', '整合'],
+        themes: {
+            beginning: '一个重要的周期即将完成',
+            mindset: '你已经准备好了',
+            advice: '庆祝你的成就，同时迎接新开始'
+        }
+    }
+];
+
+// 每日宇宙格言库
+const dailyWisdomQuotes = [
+    '命运不会催促你，\n它只会在你准备好时出现。',
+    '真正属于你的东西，\n从不需要你拼命抓住。',
+    '当你停止追问，\n命运才开始回答。',
+    '时间不会改变一切，\n但它会让答案浮现。',
+    '有些答案，\n不是未来给你的，\n而是你已经知道的。',
+    '你不必急着知道结局，\n生活正在慢慢揭晓。',
+    '宇宙从不直接告诉你答案，\n它只会给你寻找答案的勇气。',
+    '每一个问题，\n都是通向内在的门。',
+    '相信你的直觉，\n它比理智更接近真相。',
+    '当你准备好时，\n答案就会出现。',
+    '你所寻求的，\n也在寻求着你。',
+    '在不确定中，\n藏着无限的可能。',
+    '有时候，\n不回答就是最好的回答。',
+    '答案不在远方，\n就在你凝视的此刻。',
+    '宇宙用沉默回应喧嚣，\n用显现回应等待。',
+    '你的心早已知道，\n只是需要勇气去看见。',
+    '生命在用最合适的方式，\n推动你成长。',
+    '接纳当下的全部，\n包括那些不确定的部分。',
+    '光明和阴影，\n都是完整的你的一部分。',
+    '当你停止寻找，\n答案自然会出现。'
+];
+
+// 首页每日格言库
+const dailyQuotes = [
+    '真正属于你的东西，从不需要你拼命抓住。',
+    '当你停止追问，命运才开始回答。',
+    '时间不会改变一切，但它会让答案浮现。',
+    '有些答案，不是未来给你的，而是你已经知道的。',
+    '你不必急着知道结局，生活正在慢慢揭晓。',
+    '宇宙从不直接告诉你答案，它只会给你寻找答案的勇气。',
+    '每一个问题，都是通向内在的门。',
+    '相信你的直觉，它比理智更接近真相。',
+    '当你准备好时，答案就会出现。',
+    '你所寻求的，也在寻求着你。',
+    '在不确定中，藏着无限的可能。',
+    '有时候，不回答就是最好的回答。',
+    '答案不在远方，就在你凝视的此刻。',
+    '宇宙用沉默回应喧嚣，用显现回应等待。',
+    '你的心早已知道，只是需要勇气去看见。'
+];
+
+// 宇宙特别讯息库 - 5%概率触发的隐藏彩蛋
+const specialMessages = [
+    '命运正在为你安排一次重要相遇。',
+    '三天内，你会收到一个意想不到的好消息。',
+    '你想念的人，也在想念着你。',
+    '一笔意外之财正在向你走来。',
+    '你即将突破一个困扰已久的瓶颈。',
+    '有人在暗中关注着你，即将出现。',
+    '你的努力即将被一个重要的人看见。',
+    '一个改变你人生轨迹的机会即将到来。',
+    '你即将遇到一个能读懂你沉默的人。',
+    '宇宙正在为你清理道路，放手让它发生。',
+    '你一直以来的坚持，即将得到回报。',
+    '一个旧人即将以新的方式回到你的生活。',
+    '你即将发现一个关于自己的重要真相。',
+    '幸运正在向你倾斜，保持敞开。',
+    '你即将做的那个决定，会改变一切。'
+];
+const wisdomQuotes = {
+    // 爆款传播格言 - 适合朋友圈分享
+    viral: [
+        '真正属于你的东西，从不需要你拼命抓住。',
+        '当你停止追问，命运才开始回答。',
+        '有些答案，不是未来给你的，而是你已经知道的。',
+        '时间不会改变一切，但它会让答案浮现。',
+        '你不必急着知道结局，生活正在慢慢揭晓。',
+        '宇宙从不直接告诉你答案，它只会给你寻找答案的勇气。',
+        '每一个问题，都是通向内在的门。',
+        '相信你的直觉，它比理智更接近真相。',
+        '当你准备好时，答案就会出现。',
+        '你所寻求的，也在寻求着你。'
+    ],
+    
+    hope: [
+        '有些答案不是未来给你的，而是你早已知道的。',
+        '当你准备好时，答案就会出现。',
+        '相信你的直觉，它比理智更接近真相。',
+        '希望之光照亮前路，保持信心和乐观。',
+        '你的努力正在开花结果，宇宙在为你鼓掌。'
+    ],
+    
+    change: [
+        '宇宙不会给你想要的，它只会给你需要的。',
+        '每个结局都是新的开始，每个开始都藏着答案。',
+        '放下执念，答案会自然浮现。',
+        '穿越这段旅程后，你会成为更完整的自己。',
+        '有时候，我们需要先迷失才能找到真正的方向。'
+    ],
+    
+    inner: [
+        '每一个问题，都是通向内在的门。',
+        '你的内心早已知道答案，只是需要时间来接受它。',
+        '宇宙正在以你看不见的方式，回应着你的每一个念头。',
+        '在独处中找到内心的光。',
+        '真正的力量来自内在的平静。'
+    ],
+    
+    timing: [
+        '有时候，不回答就是最好的回答。',
+        '当你停止寻找，答案自然会出现。',
+        '你所寻求的，也在寻求着你。',
+        '生命在用最合适的方式推动你成长。',
+        '接纳当下的全部，包括那些不确定的部分。'
+    ]
+};
+
+// 三张牌阵解读系统 - 现状/隐藏/趋势
+// 第一张：当前状态 | 第二张：隐藏因素 | 第三张：未来趋势
+
+// 解读模板库 - 三张牌阵专业解读
+const spreadTemplates = {
+    // 开场白 - 建立神秘氛围
+    opening: [
+        '当你向宇宙提问，{card1.name}、{card2.name}与{card3.name}从星辰深处浮现。它们携带着来自远方的讯息，等待被你聆听...',
+        '在命运之线的交织处，{card1.name}、{card2.name}与{card3.name}为你显影。这不是预言，而是一面映照内心的镜子...',
+        '宇宙以{cards}回应你的问询。这三张牌如同三位古老的智者，各自诉说着关于你问题的不同面向...',
+        '当{cards}出现在你面前，某种能量正在流动。它们不会告诉你必然发生什么，而是邀请你看见此刻正在发生的...'
+    ],
+    
+    // 现状解读（第一张牌）
+    present: [
+        '此刻的你，正站在{card1.keyword}的能量之中。{card1.meaning}。这是一种{card1.quality}的状态，它既是你当下的起点，也是你携带的印记。',
+        '你的现状被{card1.name}所描绘——{card1.meaning}。这种能量环绕着你，像一层无形的雾，既定义了你的处境，也暗示了可能的出口。',
+        '{card1.name}揭示了你当下的实相：{card1.meaning}。这不是评判，只是如实地映照出你此刻所处的位置。',
+        '在你提问的这一刻，{card1.keyword}的力量最为明显。{card1.meaning}。这是你的起点，无论去向何方，都从这里开始。'
+    ],
+    
+    // 隐藏因素（第二张牌）
+    hidden: [
+        '然而，在可见的表象之下，{card2.name}在低语。它揭示了你尚未完全觉察的层面——{card2.meaning}。这可能是你忽略的信号，也可能是潜意识正在运作的轨迹。',
+        '表面之下，{card2.keyword}的能量悄然流动。{card2.meaning}。这部分或许被你遗忘，或许被你压抑，但它确实在影响着你问题的走向。',
+        '{card2.name}指向那些未被看见的因素：{card2.meaning}。它们像水下的暗流，不显眼，却有着决定方向的力量。',
+        '隐藏的面向由{card2.name}守护——{card2.meaning}。当你愿意正视这部分，问题的图景会变得更加完整。'
+    ],
+    
+    // 未来趋势（第三张牌）
+    future: [
+        '至于前方，{card3.name}勾勒出一道可能的轨迹。{card3.meaning}。这不是注定的结局，而是基于当下能量流动的自然走向——如果你继续保持此刻的频率。',
+        '未来的种子已经在当下埋下。{card3.name}暗示着{card3.keyword}的可能性——{card3.meaning}。趋势是可以被感知的，但永远留有改变的空间。',
+        '{card3.name}为这个问题描绘了一个方向：{card3.meaning}。这不是命令，更像是一种邀请——如果你愿意跟随这股能量，它可能带你去往那里。',
+        '当时间的河流继续流淌，{card3.keyword}的能量可能会更加凸显。{card3.meaning}。这是可能的未来之一，而非唯一的答案。'
+    ],
+    
+    // 整合结语 - 哲学性总结
+    closing: [
+        '三张牌共同编织的图景已然清晰。现状、隐藏与趋势，如同过去、现在与未来的回响。记住，塔罗从不说"一定会"，它只是温柔地指出"此刻正"。你的自由意志，永远是最重要的变量。',
+        '这就是宇宙此刻想要分享的信息。{card1.name}是你的根基，{card2.name}是你的深度，{card3.name}是你的远方。它们共同构成一个完整的周期——而你是否愿意踏入这个周期，全然取决于你。',
+        '解读至此，但故事仍在继续。牌面给出的不是答案，而是一系列值得深思的问题。关于你的现状，关于你未见的部分，关于你可能去往的方向。真正的智慧，在于你如何回应这些提示。',
+        '星辰的排列每天都在变化，能量的流动永不停歇。今天你看到的{cards}，是此刻的 snapshot。明天再抽，可能会完全不同——因为你也已经不同。保持好奇，保持流动。'
+    ]
+};
+
+// 牌的深层解读词库 - 每张牌的多维度解读
+const cardDeepMeanings = {
+    'The Fool': {
+        keyword: '新的开始',
+        present: '你正处于某个起点的边缘，带着好奇与勇气，准备踏入未知',
+        hidden: '内心深处，你渴望挣脱束缚，追求更自由的可能性',
+        future: '新的道路正在展开，尽管看不清全貌，但第一步值得迈出'
+    },
+    'The Magician': {
+        keyword: '创造与显化',
+        present: '你拥有实现目标所需的一切资源，只是需要看见它们',
+        hidden: '你比自己意识到的更有能力，怀疑只是幻象',
+        future: '想法与现实之间的通道正在打开，显化的力量在增强'
+    },
+    'The High Priestess': {
+        keyword: '直觉与内在',
+        present: '答案不在外界，而在你安静的内心深处等待被发现',
+        hidden: '你的直觉已经在试图告诉你什么，只是被理性的噪音盖过了',
+        future: '一段需要耐心和等待的时期，真相会在合适的时机显现'
+    },
+    'The Empress': {
+        keyword: '丰饶与滋养',
+        present: '丰盛的能量正在环绕你，无论是物质还是情感层面',
+        hidden: '你值得被滋养，允许自己接受生命中的美好',
+        future: '一个收获与创造的时期正在酝酿，保持敞开去接收'
+    },
+    'The Emperor': {
+        keyword: '秩序与掌控',
+        present: '结构、规则或权威在这个问题中扮演重要角色',
+        hidden: '你对控制的需求，可能正在限制更大的可能性',
+        future: '建立稳固基础的时刻，理性与规划将带来安全感'
+    },
+    'The Lovers': {
+        keyword: '选择与爱',
+        present: '一个重要的人际关系或价值观的选择正在浮现',
+        hidden: '你内心真正渴望的，与表面做出的选择可能并不一致',
+        future: '和谐与连接的可能性，但需要先诚实地面对自己'
+    },
+    'The Chariot': {
+        keyword: '意志与前进',
+        present: '你正处于行动与推进的能量中，目标感强烈',
+        hidden: '对立的力量在你内部拉扯，需要找到平衡点',
+        future: '通过决心与专注，你能够克服眼前的障碍'
+    },
+    'Strength': {
+        keyword: '内在力量',
+        present: '真正的勇气正在你内部运作，以柔克刚的智慧',
+        hidden: '你比自己想象的更有韧性，过去的经历已经证明这一点',
+        future: '耐心与温柔的力量将带你穿越挑战'
+    },
+    'The Hermit': {
+        keyword: '独处与反思',
+        present: '这是一个需要向内看、暂时退后的时期',
+        hidden: '孤独感背后，是对真实连接的深切渴望',
+        future: '在独处中找到的领悟，将成为未来道路的明灯'
+    },
+    'Wheel of Fortune': {
+        keyword: '命运与转变',
+        present: '变化的能量正在流动，命运的齿轮在转动',
+        hidden: '某些事情正在超出你的控制，放手也是一种智慧',
+        future: '一个转折点的临近，顺应变化比抗拒更有利'
+    },
+    'Justice': {
+        keyword: '平衡与因果',
+        present: '公平、真理或因果法则在这个情境中运作',
+        hidden: '你正在评估的，可能不只是这件事，还有自己的价值观',
+        future: '结果会反映过往的选择，每个行动都有其回响'
+    },
+    'The Hanged Man': {
+        keyword: '暂停与视角',
+        present: '某种停滞或等待的状态，需要换个角度看问题',
+        hidden: '表面上的牺牲，可能是自愿的，也可能带来意外的收获',
+        future: '通过放下控制，新的领悟将自然浮现'
+    },
+    'Death': {
+        keyword: '结束与重生',
+        present: '某个周期正在结束，旧的形态正在瓦解',
+        hidden: '对失去的恐惧，可能比失去本身更让你痛苦',
+        future: '蜕变之后的你，将不再是原来的模样，这是礼物'
+    },
+    'Temperance': {
+        keyword: '调和与平衡',
+        present: '寻找中庸之道的时期，避免极端',
+        hidden: '你内部的矛盾正在寻求融合，耐心是关键',
+        future: '通过对立元素的调和，和谐的状态将逐渐建立'
+    },
+    'The Devil': {
+        keyword: '束缚与欲望',
+        present: '某种依赖、执念或限制性信念正在影响你',
+        hidden: '这些束缚看似强大，但锁链其实并未真正锁住你',
+        future: '看见束缚的本质，就是解放的开始'
+    },
+    'The Tower': {
+        keyword: '突变与觉醒',
+        present: '突然的变化或颠覆正在发生，旧结构在崩塌',
+        hidden: '这场动荡可能是必要的，为了让你看清真相',
+        future: '在废墟之上，新的可能性正在等待被建造'
+    },
+    'The Star': {
+        keyword: '希望与指引',
+        present: '希望的能量正在复苏，某种疗愈正在发生',
+        hidden: '即使在困难中，你内心深处从未放弃希望',
+        future: '灵感的火花将照亮前路，保持信心'
+    },
+    'The Moon': {
+        keyword: '迷雾与潜意识',
+        present: '不确定性笼罩着情境，真相尚不清晰',
+        hidden: '你的恐惧和幻想可能比现实更令人困扰',
+        future: '穿越迷雾后，你会对自己有更深的理解'
+    },
+    'The Sun': {
+        keyword: '光明与喜悦',
+        present: '积极、成功和清晰的能量充满这个时刻',
+        hidden: '这份光明一直在那里，只是你终于愿意看见它',
+        future: '温暖和成就的能量将持续，享受当下'
+    },
+    'Judgement': {
+        keyword: '觉醒与召唤',
+        present: '一个觉醒的时刻，内在的召唤变得清晰',
+        hidden: '你已经知道答案，只是等待自己准备好去行动',
+        future: '重生后的你将回应生命的召唤，焕然一新'
+    },
+    'The World': {
+        keyword: '完成与圆满',
+        present: '一个重要的周期正在完成，成就感油然而生',
+        hidden: '对结束的复杂情感，既有满足也有不舍',
+        future: '整合之后的你，将带着智慧开启新的旅程'
+    }
+};
+
+// 关系占卜解读系统 - 关于两个人的连结
+const relationshipSpread = {
+    // 开场 - 建立情感氛围
+    opening: [
+        '当你默念那个名字，{card1.name}、{card2.name}与{card3.name}从星尘中浮现。它们感应着你与{name}之间的连结，诉说着那些难以言说的情愫...',
+        '在爱的能量场中，{card1.name}、{card2.name}与{cards}回应着你的问询。这不是对那个人的窥探，而是对这段关系本质的一次温柔凝视...',
+        '宇宙以{cards}回应你关于{name}的念想。这三张牌如同三面镜子，映照出这段连结的不同面向——那些你感受到的，和那些你尚未察觉的...',
+        '当{name}的名字滑过你的唇边，{card1.name}、{card2.name}与{card3.name}悄然显现。它们不会告诉你对方在想什么，只会帮你更清晰地看见自己的心...'
+    ],
+
+    // 你的位置（第一张牌）- 你在这段关系中的状态
+    yourPosition: [
+        '关于你，{card1.name}静静地诉说。{card1.relationshipYou}。这是此刻你在{name}面前，或者说，在关于{name}的这段念想中所处的位置。',
+        '你在这段关系中的能量，被{card1.name}所描绘——{card1.relationshipYou}。这不是对错的问题，只是此刻真实的你。',
+        '{card1.name}映照出你面对{name}时的样子：{card1.relationshipYou}。这份能量既吸引也束缚，既是礼物也是功课。'
+    ],
+
+    // 关系动态（第二张牌）- 两人之间的流动
+    dynamics: [
+        '而你们之间的空间，由{card2.name}守护着。{card2.relationshipDynamic}。这是属于你们两个人的独特场域，既不由你单独决定，也不由{name}单独掌控。',
+        '在这段关系的深处，{card2.name}揭示了某种流动——{card2.relationshipDynamic}。这是一种共舞，你们的能量在此交汇、碰撞、融合。',
+        '{card2.name}指向你们之间的连结本质：{card2.relationshipDynamic}。无论你们现在是什么关系，这种能量的流动都在发生。'
+    ],
+
+    // 潜在可能（第三张牌）- 关系的发展方向
+    potential: [
+        '至于这段关系的未来走向，{card3.name}描绘了一种可能——{card3.relationshipPotential}。这不是预言，只是基于当下能量的自然延伸。',
+        '{card3.name}为这段连结打开一扇窗：{card3.relationshipPotential}。未来从不是固定的，它随着你们每一个当下的选择而改变。',
+        '当时间继续流淌，{card3.name}暗示着{card3.keyword}的可能性——{card3.relationshipPotential}。这是众多可能性之一，而非注定的结局。'
+    ],
+
+    // 情感共鸣结语
+    closing: [
+        '关于{name}，关于这段关系，宇宙想分享的或许并不是答案，而是更深的觉察。你看见了自己的位置，感知了之间的流动，也瞥见了可能的方向。但最终，每一个选择都握在你的手中。无论这段关系将去往何处，愿你都能温柔地对待自己。',
+        '这就是此刻关于{name}的讯息。关系从来都不是一个人的事，也不是完全由两个人决定的事。有些力量在更大的维度运作。你能做的，只是诚实地面对自己的感受，清晰地表达自己的需要，然后允许事情自然展开。',
+        '解读至此，但关于{name}的故事还在继续。牌面给你的不是指令，而是一系列值得慢下来感受的提示。在这段关系中，你真正想要的是什么？你害怕的又是什么？有时候，比知道对方怎么想更重要的，是知道自己想要什么。',
+        '星辰见证了无数段关系的生灭。关于你和{name}，此刻的{cards}只是时间长河中的一个瞬间。明天，下个月，明年，一切都会不同——因为你们都会不同。保持敞开，保持真诚，剩下的，交给时间。'
+    ]
+};
+
+// 关系占卜专用牌意 - 每张牌在关系语境下的解读
+const cardRelationshipMeanings = {
+    'The Fool': {
+        relationshipYou: '你的心是敞开的，带着好奇与无畏，愿意为爱冒险。但也许，你还没有完全看清这段关系的全貌',
+        relationshipDynamic: '这是一段轻松、充满可能性的连结，没有太多包袱，也没有太多承诺。像春天的风，自由而新鲜',
+        relationshipPotential: '新的篇章可能正在开启，带着天真与勇气，一段轻盈的旅程'
+    },
+    'The Magician': {
+        relationshipYou: '你拥有让这段关系变得更好的所有资源，只是需要看见自己的力量，而不是等待对方来改变什么',
+        relationshipDynamic: '你们之间的互动充满了创造性和主动性，有人正在努力让事情发生，让关系朝某个方向移动',
+        relationshipPotential: '通过有意识的行动和真诚的沟通，这段关系可以被塑造得更符合你心中的愿景'
+    },
+    'The High Priestess': {
+        relationshipYou: '你的直觉已经在试图告诉你关于这段关系的真相，只是你的心可能还没有准备好去听',
+        relationshipDynamic: '有些重要的东西还没有浮出水面，真相被隐藏在沉默、暗示或未说出口的感受之中',
+        relationshipPotential: '答案会在适当的时机显现，在此之前，保持耐心，相信你的内在指引'
+    },
+    'The Empress': {
+        relationshipYou: '你带着丰盛的爱与滋养的能量，愿意为这段关系付出，也希望被温柔对待',
+        relationshipDynamic: '这段关系充满了关怀、温暖与接纳，像是一个安全的港湾，让人感到被滋养',
+        relationshipPotential: '爱与美的能量会继续生长，一段丰盛而充满创造力的关系正在酝酿'
+    },
+    'The Emperor': {
+        relationshipYou: '你可能在这段关系中寻求安全感、结构或掌控，希望事情按照某种方式发展',
+        relationshipDynamic: '权力、规则或界限在这段关系中扮演重要角色，有人正在定义边界或设立框架',
+        relationshipPotential: '通过建立清晰的界限和相互尊重，这段关系可以变得更加稳固'
+    },
+    'The Lovers': {
+        relationshipYou: '你面对着关于这段关系的重要选择，你的心在牵引你向某个方向，但理性可能有不同的声音',
+        relationshipDynamic: '这是一段充满吸引力、价值观碰撞或深刻选择的连结，你们在彼此身上看见自己的倒影',
+        relationshipPotential: '一段深刻的结合是可能的，但需要双方都做出选择，都愿意全心投入'
+    },
+    'The Chariot': {
+        relationshipYou: '你带着强烈的意志想要推进这段关系，目标明确，但也许忽略了对方的节奏',
+        relationshipDynamic: '这段关系中存在某种张力，两个独立的意志在寻找共同的轨道，需要协调与妥协',
+        relationshipPotential: '通过共同的目标和相互支持，这段关系可以克服障碍，驶向更远的地方'
+    },
+    'Strength': {
+        relationshipYou: '你展现出了温柔的勇气，愿意用爱去面对这段关系中的挑战，而不是用力量去控制',
+        relationshipDynamic: '这段关系的深度在于彼此温柔的接纳，以及在困难时刻展现出的耐心与理解',
+        relationshipPotential: '随着时间的推移，这段关系会培养出深厚的信任和韧性，能够经受考验'
+    },
+    'The Hermit': {
+        relationshipYou: '你可能需要一些独处的时间来理清自己对这段关系的真实感受，暂时退后一步',
+        relationshipDynamic: '这段关系可能正经历一段静默期，或者你们之间存在着某种距离，需要空间来重新认识自己',
+        relationshipPotential: '在独处中获得的领悟会帮助你更清晰地看见这段关系的意义，以及你是否真的想要它'
+    },
+    'Wheel of Fortune': {
+        relationshipYou: '你感受到了命运的力量在推动这段关系，有些事情超出了你的控制，让你既期待又不安',
+        relationshipDynamic: '这段关系正处于变化之中，像潮水一样有起有落，时机在扮演着重要角色',
+        relationshipPotential: '一个转折点正在接近，这段关系可能会进入一个全新的阶段，但方向尚未确定'
+    },
+    'Justice': {
+        relationshipYou: '你在评估这段关系的公平性，思考付出与回报是否平衡，也在审视自己的责任',
+        relationshipDynamic: '因果法则在运作，过去的选择正在显现结果，真相需要被面对，无论它是什么',
+        relationshipPotential: '通过诚实的沟通和公正的对待，这段关系可以找到新的平衡'
+    },
+    'The Hanged Man': {
+        relationshipYou: '你可能感到在这段关系中处于某种停滞，或者你正在经历一种牺牲，等待新的视角浮现',
+        relationshipDynamic: '这段关系似乎卡住了，没有前进也没有后退，但也许正是在这种暂停中，新的理解会诞生',
+        relationshipPotential: '通过放下执念，从另一个角度看待这段关系，你会发现之前没有注意到的可能性'
+    },
+    'Death': {
+        relationshipYou: '某个关于这段关系的旧故事正在结束，你可能正在经历失去、告别或重大转变',
+        relationshipDynamic: '这段关系正在经历蜕变，旧的形态正在瓦解，虽然痛苦，但这是重生的必经之路',
+        relationshipPotential: '结束之后会有新的开始，但新的形态会与过去完全不同，你需要允许它发生'
+    },
+    'Temperance': {
+        relationshipYou: '你在学习如何在这段关系中保持平衡，不给予太多也不保留太多，寻找中庸之道',
+        relationshipDynamic: '这段关系需要耐心和时间来培养，两个独立的灵魂正在学习如何和谐共处',
+        relationshipPotential: '通过持续的调和与磨合，这段关系会逐渐找到属于它自己的节奏和平衡'
+    },
+    'The Devil': {
+        relationshipYou: '你可能对{name}或这段关系有一种执念，某种依赖或恐惧让你难以放手，即使它并不健康',
+        relationshipDynamic: '这段关系中存在着某种束缚，可能是习惯性的依赖、未满足的欲望，或彼此纠缠的模式',
+        relationshipPotential: '看见这些束缚的本质是解放的第一步，你有力量选择是否继续被它们定义'
+    },
+    'The Tower': {
+        relationshipYou: '你可能正在经历关于这段关系的突然觉醒，某些你一直回避的真相正在强行进入你的意识',
+        relationshipDynamic: '这段关系正在经历剧烈的动荡，旧有的基础正在崩塌，虽然令人不安，但真相终究需要被看见',
+        relationshipPotential: '在废墟之上，新的真实关系可以被建立，但那会是一个完全不同的形态'
+    },
+    'The Star': {
+        relationshipYou: '在关于这段关系的困惑之后，希望正在重新点燃，你又开始相信美好的可能性',
+        relationshipDynamic: '这段关系携带着疗愈的能量，像一股清泉，能够抚平过去的伤痛，带来宁静',
+        relationshipPotential: '一段充满希望和灵感的关系正在展开，保持信心，让这份光芒继续照亮前路'
+    },
+    'The Moon': {
+        relationshipYou: '你对这段关系的感受充满了迷雾，不确定{name}的想法，也不确定自己真正想要什么',
+        relationshipDynamic: '这段关系被不确定性笼罩，幻想与恐惧交织，真相隐藏在层层迷雾之后',
+        relationshipPotential: '穿越这段迷雾期后，你会对自己和这段关系有更深的理解，但首先需要走过这段不确定'
+    },
+    'The Sun': {
+        relationshipYou: '你对这段关系感到明朗和喜悦，心中充满了温暖，愿意为这份美好敞开心扉',
+        relationshipDynamic: '这是一段充满阳光、坦诚和喜悦的连结，彼此都能在对方面前做真实的自己',
+        relationshipPotential: '这段关系的未来是光明的，快乐和满足会持续，享受此刻的美好'
+    },
+    'Judgement': {
+        relationshipYou: '关于{name}的某个觉醒正在发生，你听到了内心的召唤，知道自己需要做出回应',
+        relationshipDynamic: '这段关系正在经历一个重生的时刻，过去的模式正在被重新评估，新的可能正在召唤',
+        relationshipPotential: '重生后的关系会以全新的方式存在，如果你愿意回应这个召唤，一切都会不同'
+    },
+    'The World': {
+        relationshipYou: '关于{name}的某个周期正在完成，你感受到了一种圆满，也准备好了开启新的篇章',
+        relationshipDynamic: '这段关系达到了某种完整性，无论它是继续还是结束，都已经完成了它的使命',
+        relationshipPotential: '一个完整的周期结束后，新的旅程即将开始，带着这段关系给予你的智慧和成长'
+    }
+};
+
+/**
+ * 判断牌面类型
+ */
+function getReadingType(cards) {
+    const positiveCards = ['The Sun', 'The Star', 'The World', 'The Magician', 'The Empress', 'The Fool'];
+    const challengingCards = ['The Moon', 'The Tower', 'The Devil', 'Death', 'The Hanged Man'];
+    const transformativeCards = ['Wheel of Fortune', 'Death', 'Judgement', 'The Tower'];
+    
+    let positiveCount = 0;
+    let challengingCount = 0;
+    let transformativeCount = 0;
+    
+    cards.forEach(card => {
+        if (positiveCards.includes(card.name)) positiveCount++;
+        if (challengingCards.includes(card.name)) challengingCount++;
+        if (transformativeCards.includes(card.name)) transformativeCount++;
+    });
+    
+    if (transformativeCount >= 1) return 'transformative';
+    if (challengingCount >= 2) return 'challenging';
+    if (positiveCount >= 2) return 'positive';
+    return 'mixed';
+}
+
+/**
+ * 页面切换
+ */
+function goToPage(pageId) {
+    document.querySelectorAll('.page').forEach(page => {
+        page.classList.remove('active');
+    });
+    document.getElementById(pageId).classList.add('active');
+    
+    if (pageId === 'page-draw') {
+        initDrawPage();
+    } else if (pageId === 'page-interpret') {
+        generateInterpretation();
+    } else if (pageId === 'page-relationship-interpret') {
+        generateRelationshipInterpretation();
+    } else if (pageId === 'page-wisdom') {
+        generateWisdom();
+    } else if (pageId === 'page-share') {
+        prepareShareCard();
+    }
+}
+
+/**
+ * 选择占卜模式
+ */
+function selectMode(mode) {
+    state.mode = mode;
+    if (mode === 'general') {
+        goToPage('page-input');
+    } else {
+        goToPage('page-relationship-input');
+    }
+}
+
+/**
+ * 填充问题示例
+ */
+function fillQuestion(question) {
+    document.getElementById('question-input').value = question;
+}
+
+/**
+ * 填充名字示例
+ */
+function fillPersonName(name) {
+    document.getElementById('person-name-input').value = name;
+}
+
+/**
+ * 提交问题
+ */
+function submitQuestion() {
+    const question = document.getElementById('question-input').value.trim();
+    if (!question) {
+        alert('请先输入你的问题');
+        return;
+    }
+    state.question = question;
+    goToPage('page-draw');
+}
+
+/**
+ * 提交关系占卜
+ */
+function submitRelationship() {
+    const name = document.getElementById('person-name-input').value.trim();
+    if (!name) {
+        alert('请输入一个人的名字');
+        return;
+    }
+    state.personName = name;
+    goToPage('page-draw');
+}
+
+/**
+ * 初始化抽牌页面
+ */
+function initDrawPage() {
+    state.revealedCards = 0;
+    state.cards = [];
+    
+    // 随机抽取3张不重复的牌
+    const shuffled = [...tarotCards].sort(() => Math.random() - 0.5);
+    state.cards = shuffled.slice(0, 3);
+    
+    document.querySelectorAll('.card').forEach(card => {
+        card.classList.remove('revealed');
+    });
+    
+    state.cards.forEach((card, index) => {
+        const cardEl = document.getElementById(`card-${index + 1}`);
+        const cardBack = cardEl.querySelector('.card-back');
+        cardBack.innerHTML = `
+            <div class="card-content">
+                <div class="card-number">${card.nameCN}</div>
+                <div class="card-name">${card.name}</div>
+                <div class="card-meaning">${card.keywords[0]}</div>
+            </div>
+        `;
+    });
+    
+    document.getElementById('btn-interpret').style.display = 'none';
+}
+
+/**
+ * 翻开卡牌
+ */
+function revealCard(cardIndex) {
+    const card = document.getElementById(`card-${cardIndex}`);
+    if (card.classList.contains('revealed')) return;
+    
+    card.classList.add('revealed');
+    state.revealedCards++;
+    
+    if (state.revealedCards === 3) {
+        setTimeout(() => {
+            // 根据模式显示不同的按钮
+            if (state.mode === 'relationship') {
+                document.getElementById('btn-interpret').textContent = '查看宇宙低语';
+                document.getElementById('btn-interpret').onclick = () => goToPage('page-relationship-interpret');
+            } else {
+                document.getElementById('btn-interpret').textContent = '查看宇宙解读';
+                document.getElementById('btn-interpret').onclick = () => goToPage('page-interpret');
+            }
+            document.getElementById('btn-interpret').style.display = 'inline-block';
+        }, 700);
+    }
+}
+
+/**
+ * 生成宇宙解读 - 智能组合算法
+ */
+function generateInterpretation() {
+    // 生成随机编号 (1000-9999)
+    const answerId = Math.floor(1000 + Math.random() * 9000);
+    document.querySelector('#answer-id span').textContent = answerId;
+    
+    document.getElementById('display-question').textContent = state.question;
+    
+    state.cards.forEach((card, index) => {
+        const miniCard = document.getElementById(`mini-card-${index + 1}`);
+        const labels = ['现状', '隐匿', '未来'];
+        miniCard.innerHTML = `
+            <div style="font-size:0.6rem;color:rgba(157,123,255,0.8);margin-bottom:2px;">${labels[index]}</div>
+            <div style="font-size:0.7rem;font-weight:bold;">${card.nameCN}</div>
+            <div style="font-size:0.5rem;margin-top:2px;opacity:0.7;">${card.keywords[0]}</div>
+        `;
+    });
+    
+    document.getElementById('interpret-loading').style.display = 'block';
+    document.getElementById('interpret-content').style.display = 'none';
+    document.getElementById('btn-wisdom').style.display = 'none';
+    
+    setTimeout(() => {
+        const interpretation = generateSmartInterpretation();
+        
+        // 5%概率触发宇宙特别讯息（隐藏彩蛋）
+        let specialMessage = '';
+        if (Math.random() < 0.05) {
+            const randomMessage = specialMessages[Math.floor(Math.random() * specialMessages.length)];
+            specialMessage = '\n\n✦ 宇宙特别讯息：' + randomMessage;
+        }
+        
+        state.interpretation = interpretation + specialMessage;
+        
+        document.getElementById('interpret-text').textContent = state.interpretation;
+        document.getElementById('interpret-loading').style.display = 'none';
+        document.getElementById('interpret-content').style.display = 'block';
+        document.getElementById('btn-wisdom').style.display = 'inline-block';
+    }, 2000);
+}
+
+/**
+ * 智能解读生成 - 三张牌阵专业解读
+ * 第一张：当前状态 | 第二张：隐藏因素 | 第三张：未来趋势
+ */
+function generateSmartInterpretation() {
+    const [card1, card2, card3] = state.cards;
+    const meanings1 = cardDeepMeanings[card1.name];
+    const meanings2 = cardDeepMeanings[card2.name];
+    const meanings3 = cardDeepMeanings[card3.name];
+    
+    // 随机选择模板
+    const opening = spreadTemplates.opening[Math.floor(Math.random() * spreadTemplates.opening.length)];
+    const present = spreadTemplates.present[Math.floor(Math.random() * spreadTemplates.present.length)];
+    const hidden = spreadTemplates.hidden[Math.floor(Math.random() * spreadTemplates.hidden.length)];
+    const future = spreadTemplates.future[Math.floor(Math.random() * spreadTemplates.future.length)];
+    const closing = spreadTemplates.closing[Math.floor(Math.random() * spreadTemplates.closing.length)];
+    
+    // 构建卡片名称
+    const cards = [card1, card2, card3].map(c => c.nameCN).join('、');
+    
+    // 填充模板
+    let interpretation = opening
+        .replace('{cards}', cards)
+        .replace('{card1.name}', card1.nameCN)
+        .replace('{card2.name}', card2.nameCN)
+        .replace('{card3.name}', card3.nameCN);
+    
+    interpretation += '\n\n【现状之境】\n' + present
+        .replace(/{card1.name}/g, card1.nameCN)
+        .replace(/{card1.keyword}/g, meanings1.keyword)
+        .replace(/{card1.meaning}/g, meanings1.present)
+        .replace(/{card1.quality}/g, getCardQuality(card1));
+    
+    interpretation += '\n\n【隐匿之影】\n' + hidden
+        .replace(/{card2.name}/g, card2.nameCN)
+        .replace(/{card2.keyword}/g, meanings2.keyword)
+        .replace(/{card2.meaning}/g, meanings2.hidden);
+    
+    interpretation += '\n\n【未来之流】\n' + future
+        .replace(/{card3.name}/g, card3.nameCN)
+        .replace(/{card3.keyword}/g, meanings3.keyword)
+        .replace(/{card3.meaning}/g, meanings3.future);
+    
+    interpretation += '\n\n' + closing
+        .replace(/{cards}/g, cards)
+        .replace(/{card1.name}/g, card1.nameCN)
+        .replace(/{card2.name}/g, card2.nameCN)
+        .replace(/{card3.name}/g, card3.nameCN);
+    
+    return interpretation;
+}
+
+/**
+ * 获取卡牌的品质描述
+ */
+function getCardQuality(card) {
+    const positiveCards = ['The Sun', 'The Star', 'The World', 'The Magician', 'The Empress', 'The Fool', 'Strength', 'Temperance'];
+    const challengingCards = ['The Moon', 'The Tower', 'The Devil', 'Death', 'The Hanged Man'];
+    
+    if (positiveCards.includes(card.name)) return '积极而充满可能性';
+    if (challengingCards.includes(card.name)) return '具有挑战性但蕴含成长';
+    return '中性而平衡';
+}
+
+/**
+ * 生成关系占卜解读 - 关于两个人的连结
+ * 第一张：你的位置 | 第二张：关系动态 | 第三张：潜在可能
+ */
+function generateRelationshipInterpretation() {
+    // 生成随机编号 (1000-9999)
+    const answerId = Math.floor(1000 + Math.random() * 9000);
+    document.querySelector('#relation-answer-id span').textContent = answerId;
+    
+    document.getElementById('display-person-name').textContent = state.personName;
+
+    state.cards.forEach((card, index) => {
+        const miniCard = document.getElementById(`relation-mini-card-${index + 1}`);
+        const labels = ['你', '之间', '可能'];
+        miniCard.innerHTML = `
+            <div style="font-size:0.6rem;color:rgba(157,123,255,0.8);margin-bottom:2px;">${labels[index]}</div>
+            <div style="font-size:0.7rem;font-weight:bold;">${card.nameCN}</div>
+            <div style="font-size:0.5rem;margin-top:2px;opacity:0.7;">${card.keywords[0]}</div>
+        `;
+    });
+
+    document.getElementById('relation-interpret-loading').style.display = 'block';
+    document.getElementById('relation-interpret-content').style.display = 'none';
+    document.getElementById('btn-relation-wisdom').style.display = 'none';
+
+    setTimeout(() => {
+        const interpretation = generateRelationshipSpread();
+
+        state.interpretation = interpretation;
+
+        document.getElementById('relation-interpret-text').textContent = state.interpretation;
+        document.getElementById('relation-interpret-loading').style.display = 'none';
+        document.getElementById('relation-interpret-content').style.display = 'block';
+        document.getElementById('btn-relation-wisdom').style.display = 'inline-block';
+    }, 2000);
+}
+
+/**
+ * 生成关系牌阵解读
+ */
+function generateRelationshipSpread() {
+    const [card1, card2, card3] = state.cards;
+    const meanings1 = cardRelationshipMeanings[card1.name];
+    const meanings2 = cardRelationshipMeanings[card2.name];
+    const meanings3 = cardRelationshipMeanings[card3.name];
+
+    // 随机选择模板
+    const opening = relationshipSpread.opening[Math.floor(Math.random() * relationshipSpread.opening.length)];
+    const yourPosition = relationshipSpread.yourPosition[Math.floor(Math.random() * relationshipSpread.yourPosition.length)];
+    const dynamics = relationshipSpread.dynamics[Math.floor(Math.random() * relationshipSpread.dynamics.length)];
+    const potential = relationshipSpread.potential[Math.floor(Math.random() * relationshipSpread.potential.length)];
+    const closing = relationshipSpread.closing[Math.floor(Math.random() * relationshipSpread.closing.length)];
+
+    // 构建卡片名称
+    const cards = [card1, card2, card3].map(c => c.nameCN).join('、');
+
+    // 填充模板
+    let interpretation = opening
+        .replace(/{cards}/g, cards)
+        .replace(/{name}/g, state.personName)
+        .replace(/{card1.name}/g, card1.nameCN)
+        .replace(/{card2.name}/g, card2.nameCN)
+        .replace(/{card3.name}/g, card3.nameCN);
+
+    interpretation += '\n\n【你在此刻】\n' + yourPosition
+        .replace(/{card1.name}/g, card1.nameCN)
+        .replace(/{card1.keyword}/g, card1.keywords[0])
+        .replace(/{card1.relationshipYou}/g, meanings1.relationshipYou)
+        .replace(/{name}/g, state.personName);
+
+    interpretation += '\n\n【之间流动】\n' + dynamics
+        .replace(/{card2.name}/g, card2.nameCN)
+        .replace(/{card2.keyword}/g, card2.keywords[0])
+        .replace(/{card2.relationshipDynamic}/g, meanings2.relationshipDynamic)
+        .replace(/{name}/g, state.personName);
+
+    interpretation += '\n\n【潜在可能】\n' + potential
+        .replace(/{card3.name}/g, card3.nameCN)
+        .replace(/{card3.keyword}/g, card3.keywords[0])
+        .replace(/{card3.relationshipPotential}/g, meanings3.relationshipPotential)
+        .replace(/{name}/g, state.personName);
+
+    interpretation += '\n\n' + closing
+        .replace(/{cards}/g, cards)
+        .replace(/{name}/g, state.personName)
+        .replace(/{card1.name}/g, card1.nameCN)
+        .replace(/{card2.name}/g, card2.nameCN)
+        .replace(/{card3.name}/g, card3.nameCN);
+
+    return interpretation;
+}
+
+/**
+ * 生成宇宙格言 - 优先使用爆款传播格言
+ */
+function generateWisdom() {
+    document.getElementById('wisdom-loading').style.display = 'block';
+    document.getElementById('wisdom-content').style.display = 'none';
+    document.getElementById('btn-share').style.display = 'none';
+    
+    setTimeout(() => {
+        // 70%概率使用爆款格言（适合传播），30%概率使用主题格言
+        let quotes;
+        if (Math.random() < 0.7) {
+            quotes = wisdomQuotes.viral;
+        } else {
+            // 根据牌面类型选择格言主题
+            const readingType = getReadingType(state.cards);
+            let theme = 'inner';
+            if (readingType === 'positive') theme = 'hope';
+            else if (readingType === 'challenging') theme = 'change';
+            else if (readingType === 'transformative') theme = 'timing';
+            quotes = wisdomQuotes[theme];
+        }
+        
+        const wisdom = quotes[Math.floor(Math.random() * quotes.length)];
+        state.wisdom = wisdom;
+        
+        document.getElementById('wisdom-text').textContent = wisdom;
+        document.getElementById('wisdom-loading').style.display = 'none';
+        document.getElementById('wisdom-content').style.display = 'block';
+        document.getElementById('btn-share').style.display = 'inline-block';
+    }, 1500);
+}
+
+// 简短总结库 - 用于分享卡片
+const shortSummaries = {
+    'The Fool': '新的旅程即将开启，保持初心与勇气',
+    'The Magician': '你拥有实现愿望的所有资源',
+    'The High Priestess': '答案在你的内心深处，倾听直觉',
+    'The Empress': '丰盛的能量正在流向你',
+    'The Emperor': '建立稳固的基础，保持理性',
+    'The Lovers': '一个重要的选择或关系浮现',
+    'The Chariot': '通过意志力克服困难，勇往直前',
+    'Strength': '真正的力量来自内在的平静',
+    'The Hermit': '需要独处反思，寻找内在的光',
+    'Wheel of Fortune': '变化正在发生，顺应时机',
+    'Justice': '因果法则运作，保持诚实',
+    'The Hanged Man': '换个角度看问题，放下控制',
+    'Death': '旧的周期结束，新生即将开始',
+    'Temperance': '寻找平衡与和谐之道',
+    'The Devil': '看见束缚，你有力量解开锁链',
+    'The Tower': '突然的变化带来觉醒',
+    'The Star': '希望之光照亮前路',
+    'The Moon': '穿越迷雾，跟随直觉',
+    'The Sun': '光明和成功的能量充满你',
+    'Judgement': '觉醒的时刻，回应内心的召唤',
+    'The World': '一个完整的周期即将圆满完成'
+};
+
+/**
+ * 生成简短总结
+ */
+function generateShortSummary() {
+    const [card1, card2, card3] = state.cards;
+    const summary1 = shortSummaries[card1.name];
+    const summary2 = shortSummaries[card2.name];
+    const summary3 = shortSummaries[card3.name];
+    
+    if (state.mode === 'relationship') {
+        return `【${card1.nameCN}】${summary1}\n【${card2.nameCN}】${summary2}\n【${card3.nameCN}】${summary3}`;
+    } else {
+        return `【现状】${summary1}\n【隐藏】${summary2}\n【趋势】${summary3}`;
+    }
+}
+
+/**
+ * 准备分享卡片
+ */
+function prepareShareCard() {
+    if (state.mode === 'relationship') {
+        document.getElementById('share-question').textContent = '关于 ' + state.personName + ' 的这段关系';
+    } else {
+        document.getElementById('share-question').textContent = state.question;
+    }
+    // 使用简短总结代替长解读
+    document.getElementById('share-interpret').textContent = generateShortSummary();
+    document.getElementById('share-wisdom').textContent = state.wisdom;
+}
+
+/**
+ * 下载分享卡片
+ */
+function downloadCard() {
+    const cardElement = document.getElementById('share-card');
+    
+    html2canvas(cardElement, {
+        backgroundColor: '#0a0a1a',
+        scale: 2
+    }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `宇宙回复-${Date.now()}.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+    }).catch(err => {
+        console.error('生成图片失败:', err);
+        alert('图片生成失败，请重试');
+    });
+}
+
+// 初始化首页每日格言 - 基于日期，每天显示同一句
+function initDailyQuote() {
+    const quoteText = document.getElementById('daily-wisdom-text');
+    if (quoteText) {
+        // 使用今天的日期作为随机种子，确保同一天显示相同的格言
+        const today = new Date();
+        const dateSeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+        
+        // 简单的伪随机数生成
+        const randomIndex = dateSeed % dailyWisdomQuotes.length;
+        quoteText.innerHTML = dailyWisdomQuotes[randomIndex].replace(/\n/g, '<br>');
+    }
+}
+
+// 初始化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✨ 宇宙正在回复你 - 已加载');
+    initDailyQuote();
+});
